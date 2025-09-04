@@ -22,13 +22,13 @@ async function makeRequest(endpoint: string, options: RequestInit = {}) {
   if (isOfflineMode) {
     console.log(`makeRequest: Using offline mode for ${endpoint}`);
     
-    if (endpoint === '/make-server-8be7e5d1/donors') {
+    if (endpoint === '/donors') {
       return { donors: mockData.donors };
     }
-    if (endpoint === '/make-server-8be7e5d1/recipients') {
+    if (endpoint === '/recipients') {
       return { recipients: mockData.recipients };
     }
-    if (endpoint === '/make-server-8be7e5d1/profile') {
+    if (endpoint === '/profile') {
       return { profile: null }; // No profile in offline mode
     }
     
@@ -100,7 +100,7 @@ async function makeRequest(endpoint: string, options: RequestInit = {}) {
     console.error(`makeRequest error for ${endpoint}:`, error);
     
     // If it's a network error, switch to offline mode and try again
-    if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
       console.log(`Network error detected for ${endpoint}, switching to offline mode`);
       isOfflineMode = true;
       return makeRequest(endpoint, options); // Retry with offline mode
@@ -134,7 +134,7 @@ async function testConnectivity() {
     
     return true;
   } catch (error) {
-    console.warn('Basic connectivity test failed (this is expected if server is not deployed):', error.message);
+    console.warn('Basic connectivity test failed (this is expected if server is not deployed):', (error as Error).message);
     console.log('Switching to offline mode for better user experience...');
     isOfflineMode = true;
     return false;
@@ -175,10 +175,10 @@ const mockData = {
 };
 
 export const supabaseApi = {
-  // Authentication
+ // Authentication
   signUp: async (userData: any) => {
     try {
-      const response = await fetch(`${SERVER_URL}/make-server-8be7e5d1/signup`, {
+      const response = await fetch(`${SERVER_URL}/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -214,83 +214,82 @@ export const supabaseApi = {
     }
   },
 
-  signIn: async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+signIn: async (email: string, password: string) => {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      if (error) {
-        throw new Error(error.message);
-      }
+    if (error) {
+      throw new Error(error.message);
+    }
 
-      // Debug: Log the user metadata to see what's actually stored
-      console.log('SignIn Debug - User metadata:', data.user.user_metadata);
-      console.log('SignIn Debug - User email:', data.user.email);
+    // Debug: Log the user metadata to see what's actually stored
+    console.log('SignIn Debug - User metadata:', data.user.user_metadata);
+    console.log('SignIn Debug - User email:', data.user.email);
 
-      // Determine the role with better logic
-      let userRole = data.user.user_metadata?.role || 'individual';
-      
-      // Special check for admin email
-      if (email === 'souvikkundu7880@gmail.com') {
-        console.log('SignIn Debug - Admin email detected, forcing admin role');
-        userRole = 'admin';
-      }
+    // Determine the role with better logic
+    let userRole = data.user.user_metadata?.role || 'individual';
+    
+    // Special check for admin email
+    if (email === 'souvikkundu7880@gmail.com') {
+      console.log('SignIn Debug - Admin email detected, forcing admin role');
+      userRole = 'admin';
+    }
 
-      console.log('SignIn Debug - Final role:', userRole);
+    console.log('SignIn Debug - Final role:', userRole);
 
-      // Transform the user data to include role information
-      const transformedUser = {
+    // Transform the user data to include role information
+    const transformedUser = {
+      id: data.user.id,
+      email: data.user.email || '',
+      name: data.user.user_metadata?.name || '',
+      role: userRole,
+      hospitalId: data.user.user_metadata?.hospital_id,
+      createdAt: data.user.created_at || new Date().toISOString(),
+      success: true,
+      user: {
         id: data.user.id,
         email: data.user.email || '',
         name: data.user.user_metadata?.name || '',
         role: userRole,
         hospitalId: data.user.user_metadata?.hospital_id,
-        createdAt: data.user.created_at || new Date().toISOString(),
-        success: true,
-        user: {
-          id: data.user.id,
-          email: data.user.email || '',
-          name: data.user.user_metadata?.name || '',
-          role: userRole,
-          hospitalId: data.user.user_metadata?.hospital_id,
-          createdAt: data.user.created_at || new Date().toISOString()
-        }
-      };
+        createdAt: data.user.created_at || new Date().toISOString()
+      }
+    };
 
-      console.log('SignIn Debug - Transformed user:', transformedUser);
-      return transformedUser;
-    } catch (err: any) {
-      console.warn('SignIn error:', err?.message || err);
-      throw err;
-    }
-  },
+    console.log('SignIn Debug - Transformed user:', transformedUser);
+    return transformedUser;
+  } catch (err: any) {
+    console.warn('SignIn error:', err?.message || err);
+    throw err;
+  }
+},
 
-  signOut: async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      throw new Error(error.message);
-    }
-  },
+signOut: async () => {
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    throw new Error(error.message);
+  }
+},
 
-  getCurrentUser: async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user;
-  },
+getCurrentUser: async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+},
 
-  getSession: async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session;
-  },
-
+getSession: async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session;
+},
   // Donors
   getDonors: async () => {
-    return makeRequest('/make-server-8be7e5d1/donors');
+    return makeRequest('/donors');
   },
 
   createDonor: async (donorData: any) => {
-    return makeRequest('/make-server-8be7e5d1/donors', {
+    return makeRequest('/donors', {
       method: 'POST',
       body: JSON.stringify(donorData),
     });
@@ -298,11 +297,11 @@ export const supabaseApi = {
 
   // Recipients
   getRecipients: async () => {
-    return makeRequest('/make-server-8be7e5d1/recipients');
+    return makeRequest('/recipients');
   },
 
   createRecipient: async (recipientData: any) => {
-    return makeRequest('/make-server-8be7e5d1/recipients', {
+    return makeRequest('/recipients', {
       method: 'POST',
       body: JSON.stringify(recipientData),
     });
@@ -310,7 +309,7 @@ export const supabaseApi = {
 
   // Matching
   findMatches: async (recipientId: string) => {
-    return makeRequest('/make-server-8be7e5d1/find-matches', {
+    return makeRequest('/find-matches', {
       method: 'POST',
       body: JSON.stringify({ recipientId }),
     });
@@ -318,7 +317,7 @@ export const supabaseApi = {
 
   // Alerts
   sendAlert: async (alertData: any) => {
-    return makeRequest('/make-server-8be7e5d1/alerts', {
+    return makeRequest('/alerts', {
       method: 'POST',
       body: JSON.stringify(alertData),
     });
@@ -326,11 +325,11 @@ export const supabaseApi = {
 
   // Profile
   getProfile: async () => {
-    return makeRequest('/make-server-8be7e5d1/profile');
+    return makeRequest('/profile');
   },
 
   updateProfile: async (profileData: any) => {
-    return makeRequest('/make-server-8be7e5d1/profile', {
+    return makeRequest('/profile', {
       method: 'POST',
       body: JSON.stringify(profileData),
     });
@@ -352,7 +351,7 @@ export const supabaseApi = {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
       
-      const response = await fetch(`${SERVER_URL}/make-server-8be7e5d1/init-demo`, {
+      const response = await fetch(`${SERVER_URL}/init-demo`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -368,7 +367,7 @@ export const supabaseApi = {
       try {
         responseText = await response.text();
       } catch (readError) {
-        console.warn('Failed to read response (server may not be deployed):', readError.message);
+        console.warn('Failed to read response (server may not be deployed):', (readError as Error).message);
         isOfflineMode = true;
         return { 
           message: 'Demo accounts initialized in offline mode (server unavailable)', 
@@ -397,7 +396,7 @@ export const supabaseApi = {
       console.log('Demo accounts initialized successfully via server');
       return data;
     } catch (error) {
-      console.warn('Demo initialization error (falling back to offline mode):', error.message);
+      console.warn('Demo initialization error (falling back to offline mode):', (error as Error).message);
       
       // Always fall back to offline mode on any error
       isOfflineMode = true;
@@ -419,7 +418,7 @@ export const supabaseApi = {
 
     try {
       console.log('Testing server connectivity...');
-      console.log('Server URL:', `${SERVER_URL}/make-server-8be7e5d1/health`);
+      console.log('Server URL:', `${SERVER_URL}/health`);
       
       // Test basic connectivity first
       const isConnected = await testConnectivity();
@@ -432,7 +431,7 @@ export const supabaseApi = {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
       
-      const response = await fetch(`${SERVER_URL}/make-server-8be7e5d1/health`, {
+      const response = await fetch(`${SERVER_URL}/health`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -448,7 +447,7 @@ export const supabaseApi = {
       try {
         responseText = await response.text();
       } catch (readError) {
-        console.warn('Failed to read health check response:', readError.message);
+        console.warn('Failed to read health check response:', (readError as Error).message);
         isOfflineMode = true;
         return mockData.health;
       }
@@ -469,7 +468,7 @@ export const supabaseApi = {
       console.log('Health check successful');
       return data;
     } catch (error) {
-      console.warn('Health check error (falling back to offline mode):', error.message);
+      console.warn('Health check error (falling back to offline mode):', (error as Error).message);
       isOfflineMode = true;
       return mockData.health;
     }
@@ -483,7 +482,7 @@ export const supabaseApi = {
     }
 
     try {
-      const response = await fetch(`${SERVER_URL}/make-server-8be7e5d1/demo-status`, {
+      const response = await fetch(`${SERVER_URL}/demo-status`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -515,7 +514,7 @@ export const supabaseApi = {
     } catch (error) {
       console.error('Demo status check error:', error);
       
-      if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
         console.log('Network error detected, switching to offline mode for demo status');
         isOfflineMode = true;
         return mockData.demoStatus;
@@ -556,7 +555,7 @@ export const supabaseApi = {
       };
     } catch (error) {
       console.error('Demo test error:', error);
-      return { success: false, error: error.message, data: null };
+      return { success: false, error: (error as Error).message, data: null };
     }
   },
 
@@ -573,13 +572,13 @@ export const supabaseApi = {
       const adminPassword = '7718427880';
       
       console.log('Attempting to initialize admin user...');
-      console.log('Admin endpoint URL:', `${SERVER_URL}/make-server-8be7e5d1/init-admin`);
+      console.log('Admin endpoint URL:', `${SERVER_URL}/init-admin`);
       
       // Add timeout to prevent hanging
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
       
-      const response = await fetch(`${SERVER_URL}/make-server-8be7e5d1/init-admin`, {
+      const response = await fetch(`${SERVER_URL}/init-admin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -601,7 +600,7 @@ export const supabaseApi = {
       try {
         responseText = await response.text();
       } catch (readError) {
-        console.warn('Failed to read response (server may not be deployed):', readError.message);
+        console.warn('Failed to read response (server may not be deployed):', (readError as Error).message);
         isOfflineMode = true;
         return mockData.admin;
       }
@@ -634,7 +633,7 @@ export const supabaseApi = {
         return { success: true, message: 'Admin initialized successfully' };
       }
     } catch (error) {
-      console.warn('Admin initialization error (falling back to offline mode):', error.message);
+      console.warn('Admin initialization error (falling back to offline mode):', (error as Error).message);
       
       // Always fall back to offline mode on any error
       isOfflineMode = true;
@@ -642,3 +641,4 @@ export const supabaseApi = {
     }
   },
 };
+
