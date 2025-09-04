@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Get environment variables with proper null checking
-const env = import.meta.env || {};
+const env = (import.meta as any).env || {};
 const projectId = env.VITE_SUPABASE_PROJECT_ID || 'xyzylbeczwdfhxkkyqen';
 const publicAnonKey = env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5enlsYmVjendkZmh4a2t5cWVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5OTUyNTcsImV4cCI6MjA3MjU3MTI1N30.4NbJmr_hgbCXH7xyarAndxMoAgIT9V95qScOGlIXGZ0';
 
